@@ -6,11 +6,16 @@ WORKDIR /app
 # Install system dependencies for building Python packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    g++ \
     python3-dev \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install dependencies
 COPY requirements.txt .
+# Upgrade pip and setuptools first
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+# Install dependencies with user flag
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # Production stage
