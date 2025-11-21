@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bot-dashboard-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./bots:/app/bots
+      - ./backend/app:/app/app
+      - bot-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///./data/bot_dashboard.db
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - LOG_LEVEL=INFO
+      - AUTO_RESTART_BOTS=true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bot-dashboard-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  bot-data:
+    driver: local
+
+networks:
+  default:
+    name: bot-dashboard-network
